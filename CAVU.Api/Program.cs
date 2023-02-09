@@ -1,3 +1,6 @@
+using CAVU.CarParkService;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,7 +10,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddDbContext<CarParkContext>(opt => opt.UseInMemoryDatabase("CAVU"));
+
 var app = builder.Build();
+
+MockedData.AddMockedData(app);
+
+app.MapGet("/booking", async (CarParkContext context) =>
+    await context.Bookings.ToListAsync());
+
+app.MapGet("/parkingspot", async (CarParkContext context) =>
+    await context.ParkingSpots.ToListAsync());
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -16,30 +16,30 @@ public class ApiTests
     [Test]
     public void CheckPriceForParking_Winter()
     {
-        Assert.Pass();
+        Assert.Fail();
     }
     
     [Test]
     public void CheckPriceForParking_Summer()
     {
-        Assert.Pass();
+        Assert.Fail();
     }
     
     [Test]
     public void CreateBookingForGivenDates()
     {
-        Assert.Pass();
+        Assert.Fail();
     }
     
     [Test]
     public void CancelBooking()
     {
-        Assert.Pass();
+        Assert.Fail();
     }
     
     [Test]
     public void AmendBooking()
     {
-        Assert.Pass();
+        Assert.Fail();
     }
 }
