@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using CAVU.CarParkService;
+using CAVU.CarParkService.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,12 +21,6 @@ MockedData.AddMockedData(app);
 app.MapGet("/booking", async (CarParkContext context) =>
     await context.Bookings.ToListAsync());
 
-app.MapGet("/parkingspot", async (CarParkContext context) =>
-    await context.ParkingSpots.ToListAsync());
-
-app.MapGet("/price", async (CarParkContext context) =>
-    await context.Prices.ToListAsync());
-
 app.MapGet("/booking/checkdates", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var parkingSlots = await context.ParkingSpots.Select(x => x.Id).ToListAsync();
@@ -40,6 +35,38 @@ app.MapGet("/booking/checkprices", async ([DefaultValue("2023-06-01")]DateTime f
     var result = PriceCalculator.Calculate(prices, DateOnly.FromDateTime(from), DateOnly.FromDateTime(to));
     return result;
 });
+
+
+
+
+app.MapGet("/parkingspot", async (CarParkContext context) =>
+    await context.ParkingSpots.ToListAsync());
+
+app.MapPost("/parkingspot/", async (ParkingSpot parkingSpot, CarParkContext context) =>
+{
+    context.ParkingSpots.Add(parkingSpot);
+    await context.SaveChangesAsync();
+});
+
+app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
+{
+    if (await context.ParkingSpots.FindAsync(id) is ParkingSpot spot)
+    {
+        context.ParkingSpots.Remove(spot);
+        await context.SaveChangesAsync();
+        return Results.Ok(spot);
+    }
+
+    return Results.NotFound();
+});
+
+
+app.MapGet("/price", async (CarParkContext context) =>
+    await context.Prices.ToListAsync());
+
+
+
+
    
 
 
