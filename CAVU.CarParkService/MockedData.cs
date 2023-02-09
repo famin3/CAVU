@@ -50,7 +50,8 @@ public static class MockedData
                 Price = random.NextDecimal(1, 100),
                 StartDate = startDate,
                 EndDate = endDate,
-                ParkingSpotId = (int)random.NextInt64(1,10)
+                ParkingSpotId = (int)random.NextInt64(1,10),
+                Active = true
             });
         }
 

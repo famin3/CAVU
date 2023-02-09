@@ -8,4 +8,16 @@ public class Booking
     public decimal Price { get; set; }
     public bool Charged { get; set; }
     public int ParkingSpotId { get; set; }
+    public bool Active { get; set; }
+
+    public void Cancel()
+    {
+        Active = false;
+    }
+
+    public void Update(DateTime startdate, DateTime endDate)
+    {
+        StartDate = startdate;
+        EndDate = endDate;
+    }
 }
