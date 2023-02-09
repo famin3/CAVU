@@ -11,6 +11,23 @@ public static class MockedData
         var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetService<CarParkContext>();
 
+        var random = new Random();
+        //prices
+        for (var i = 0; i < 5; i++)
+        {
+            var fromDate = new DateOnly(2023, 6, 1).AddDays(i*7);
+            var toDate = new DateOnly(2023, 6, 1).AddDays(i*7 + 6);
+            
+            db?.Prices.Add(new Price()
+            {
+                Id = i+1,
+                From = fromDate,
+                To = toDate,
+                PricePerDay = random.NextDecimal(10,30)
+            });
+        }
+        
+        //parking spots
         for (var i = 1; i <= 10; i++)
         {
             db?.ParkingSpots.Add(new ParkingSpot()
@@ -20,7 +37,8 @@ public static class MockedData
             });
         }
 
-        var random = new Random();
+        //bookings
+        
         for (var i = 1; i <= 20; i++)
         {
             var startDate = random.NextDate(new DateTime(2023, 6, 1), new DateTime(2023, 6, 30));
@@ -36,6 +54,8 @@ public static class MockedData
             });
         }
 
+        
+        
         db?.SaveChangesAsync();
 
 

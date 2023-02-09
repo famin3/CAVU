@@ -1,4 +1,4 @@
-﻿namespace CAVU.CarParkService;
+﻿namespace CAVU.CarParkService.Models;
 
 public class ParkingSpot
 {

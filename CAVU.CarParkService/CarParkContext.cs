@@ -12,6 +12,7 @@ public class CarParkContext : DbContext
 
     public DbSet<ParkingSpot> ParkingSpots => Set<ParkingSpot>();
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<Price> Prices => Set<Price>();
     
     
 }
