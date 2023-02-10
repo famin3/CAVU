@@ -1,8 +1,7 @@
 using System.ComponentModel;
 using CAVU.CarParkService;
+using CAVU.CarParkService.DTOs;
 using CAVU.CarParkService.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,38 +17,44 @@ builder.Services.AddDbContext<CarParkContext>(opt => opt.UseInMemoryDatabase("CA
 
 var app = builder.Build();
 
+
+//Mocked data
 MockedData.AddMockedData(app);
+
 
 app.MapGet("/booking", async (CarParkContext context) =>
     Results.Json(await context.Bookings.ToListAsync()));
 
-app.MapGet("/booking/checkdates", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/availableslotsfordaterange", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var parkingSlots = await context.ParkingSpots.Select(x => x.Id).ToListAsync();
     var takenSlots = await context.Bookings.Where(x => x.StartDate.Date <= to && x.EndDate.Date >= from && x.Active)
         .Select(y => y.ParkingSpotId).ToListAsync();
-    return Results.Json("Available slots: " + string.Join(',',parkingSlots.Except(takenSlots)));
+    return Results.Json(parkingSlots.Except(takenSlots));
 });
 
-app.MapGet("/booking/checkdatesdetailed", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/availableslotscountperday", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var parkingSlotsCount = (await context.ParkingSpots.Select(x => x.Id).ToListAsync()).Count;
     var bookings = await context.Bookings.Where(x => x.StartDate.Date <= to && x.EndDate.Date >= from && x.Active).ToListAsync();
     
-    var result = "";
+    var result = new List<AvailableSlotCountPerDayDto>();
     for (var day = from; day <= to; day = day.AddDays(1))
     {
         var takenSlotsPerDay = bookings.Count(x => x.StartDate.Date <= day && x.EndDate.Date >= day);
         var freeSlotPerDay = parkingSlotsCount - takenSlotsPerDay;
 
-        result += $"Available slots for {day.ToShortDateString()}: " + freeSlotPerDay + Environment.NewLine;
+        result.Add(new AvailableSlotCountPerDayDto
+        {
+            Date = day.ToShortDateString(),
+            NumberOfSlots = freeSlotPerDay
+        });
     }
-
 
     return Results.Json(result);
 });
 
-app.MapGet("/booking/checkprices", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/price", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var prices = await context.Prices.ToListAsync();
     var result = PriceCalculator.Calculate(prices, DateOnly.FromDateTime(from), DateOnly.FromDateTime(to));
@@ -97,7 +102,7 @@ app.MapPut("/booking/", async (Booking dto, CarParkContext context) =>
 
 app.MapGet("/parkingspot", async (CarParkContext context) =>
 {
-    var result = await context.ParkingSpots.ToListAsync();
+    var result = (await context.ParkingSpots.ToListAsync()).Select(ParkingSpotDto.From).ToList();
     return Results.Json(result);
 });
    
@@ -109,7 +114,7 @@ app.MapPost("/parkingspot", async (ParkingSpot parkingSpot, CarParkContext conte
     return Results.Ok();
 });
 
-app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
+app.MapDelete("/parkingspot{id}", async (int id, CarParkContext context) =>
 {
     if (await context.ParkingSpots.FindAsync(id) is ParkingSpot spot)
     {
@@ -124,7 +129,7 @@ app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
 
 app.MapGet("/price", async (CarParkContext context) =>
 {
-    var result = await context.Prices.ToListAsync();
+    var result = (await context.Prices.ToListAsync()).Select(PriceDto.CreateFrom).ToList();
     return Results.Json(result);
 });
 
