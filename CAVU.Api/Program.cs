@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using CAVU.CarParkService;
 using CAVU.CarParkService.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,14 +21,14 @@ var app = builder.Build();
 MockedData.AddMockedData(app);
 
 app.MapGet("/booking", async (CarParkContext context) =>
-    await context.Bookings.ToListAsync());
+    Results.Json(await context.Bookings.ToListAsync()));
 
 app.MapGet("/booking/checkdates", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var parkingSlots = await context.ParkingSpots.Select(x => x.Id).ToListAsync();
     var takenSlots = await context.Bookings.Where(x => x.StartDate.Date <= to && x.EndDate.Date >= from && x.Active)
         .Select(y => y.ParkingSpotId).ToListAsync();
-    return "Available slots: " + string.Join(',',parkingSlots.Except(takenSlots));
+    return Results.Json("Available slots: " + string.Join(',',parkingSlots.Except(takenSlots)));
 });
 
 app.MapGet("/booking/checkdatesdetailed", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
@@ -44,14 +46,14 @@ app.MapGet("/booking/checkdatesdetailed", async ([DefaultValue("2023-06-01")]Dat
     }
 
 
-    return result;
+    return Results.Json(result);
 });
 
 app.MapGet("/booking/checkprices", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
 {
     var prices = await context.Prices.ToListAsync();
     var result = PriceCalculator.Calculate(prices, DateOnly.FromDateTime(from), DateOnly.FromDateTime(to));
-    return result;
+    return Results.Json(result);
 });
 
 app.MapPost("/booking/", async (Booking booking, CarParkContext context) =>
@@ -94,12 +96,17 @@ app.MapPut("/booking/", async (Booking dto, CarParkContext context) =>
 
 
 app.MapGet("/parkingspot", async (CarParkContext context) =>
-    await context.ParkingSpots.ToListAsync());
+{
+    var result = await context.ParkingSpots.ToListAsync();
+    return Results.Json(result);
+});
+   
 
-app.MapPost("/parkingspot/", async (ParkingSpot parkingSpot, CarParkContext context) =>
+app.MapPost("/parkingspot", async (ParkingSpot parkingSpot, CarParkContext context) =>
 {
     context.ParkingSpots.Add(parkingSpot);
     await context.SaveChangesAsync();
+    return Results.Ok();
 });
 
 app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
@@ -116,7 +123,10 @@ app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
 
 
 app.MapGet("/price", async (CarParkContext context) =>
-    await context.Prices.ToListAsync());
+{
+    var result = await context.Prices.ToListAsync();
+    return Results.Json(result);
+});
 
 
 
