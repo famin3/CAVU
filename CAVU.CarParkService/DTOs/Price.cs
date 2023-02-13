@@ -1,5 +1,4 @@
 ﻿using CAVU.CarParkService.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace CAVU.CarParkService.DTOs;
 

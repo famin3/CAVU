@@ -5,6 +5,7 @@ using CAVU.CarParkService.DTOs;
 using CAVU.CarParkService.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -82,7 +83,7 @@ MockedData.AddMockedData(app);
 app.MapGet("/booking", async (CarParkContext context) =>
     Results.Json(await context.Bookings.ToListAsync())).RequireAuthorization("read:all");
 
-app.MapGet("/booking/availableslotsfordaterange", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/availableslotsfordaterange", async ([DefaultValue("2023-06-01")][FromHeader]DateTime from, [DefaultValue("2023-06-30")][FromHeader]DateTime to, CarParkContext context) =>
 {
     var parkingSlots = await context.ParkingSpots.Select(x => x.Id).ToListAsync();
     var takenSlots = await context.Bookings.Where(x => x.StartDate.Date <= to && x.EndDate.Date >= from && x.Active)
@@ -90,7 +91,7 @@ app.MapGet("/booking/availableslotsfordaterange", async ([DefaultValue("2023-06-
     return Results.Json(parkingSlots.Except(takenSlots));
 }).RequireAuthorization("read:all");
 
-app.MapGet("/booking/availableslotscountperday", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/availableslotscountperday", async ([DefaultValue("2023-06-01")][FromHeader]DateTime from, [DefaultValue("2023-06-30")][FromHeader]DateTime to, CarParkContext context) =>
 {
     var parkingSlotsCount = (await context.ParkingSpots.Select(x => x.Id).ToListAsync()).Count;
     var bookings = await context.Bookings.Where(x => x.StartDate.Date <= to && x.EndDate.Date >= from && x.Active).ToListAsync();
@@ -111,7 +112,7 @@ app.MapGet("/booking/availableslotscountperday", async ([DefaultValue("2023-06-0
     return Results.Json(result);
 }).RequireAuthorization("read:all");
 
-app.MapGet("/booking/price", async ([DefaultValue("2023-06-01")]DateTime from, [DefaultValue("2023-06-30")]DateTime to, CarParkContext context) =>
+app.MapGet("/booking/price", async ([DefaultValue("2023-06-01")][FromHeader]DateTime from, [DefaultValue("2023-06-30")][FromHeader]DateTime to, CarParkContext context) =>
 {
     var prices = await context.Prices.ToListAsync();
     var result = PriceCalculator.Calculate(prices, DateOnly.FromDateTime(from), DateOnly.FromDateTime(to));
@@ -128,12 +129,16 @@ app.MapPost("/booking/", async (Booking booking, CarParkContext context) =>
 
     if (availableSlotsCount == 0) return Results.Problem("Can't book for these dates");
     
+    var prices = await context.Prices.ToListAsync();
+
+    booking.Price = PriceCalculator.Calculate(prices, DateOnly.FromDateTime(booking.StartDate), DateOnly.FromDateTime(booking.EndDate.Date));
+    
     context.Bookings.Add(booking);
     await context.SaveChangesAsync();
-    return Results.Ok();
+    return Results.Created($"/booking/{booking.Id}", booking);
 }).RequireAuthorization("read:all");
 
-app.MapPut("/booking/cancel", async (int id, CarParkContext context) =>
+app.MapPut("/booking/cancel", async ([FromHeader]int id, CarParkContext context) =>
 {
     if (await context.Bookings.FindAsync(id) is Booking booking)
     {
@@ -168,10 +173,10 @@ app.MapPost("/parkingspot", async (ParkingSpot parkingSpot, CarParkContext conte
 {
     context.ParkingSpots.Add(parkingSpot);
     await context.SaveChangesAsync();
-    return Results.Ok();
+    return Results.Created($"/parkingspot/{parkingSpot.Id}", parkingSpot);
 }).RequireAuthorization("read:all");
 
-app.MapDelete("/parkingspot{id}", async (int id, CarParkContext context) =>
+app.MapDelete("/parkingspot/{id}", async (int id, CarParkContext context) =>
 {
     if (await context.ParkingSpots.FindAsync(id) is ParkingSpot spot)
     {
@@ -213,3 +218,10 @@ app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
+
+
+//for testing
+public partial class Program
+{
+    
+}
