@@ -118,7 +118,7 @@ public class ApiTests
         using (var requestMessage =
                new HttpRequestMessage(HttpMethod.Put, "/booking/cancel"))
         {
-            requestMessage.Headers.Add("id", "1");
+            requestMessage.Headers.Add("id", "1333");
             var response = await client.SendAsync(requestMessage);
         
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
@@ -196,6 +196,14 @@ public class ApiTests
         var response = await client.DeleteAsync("/parkingspot/1");
         
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+    }
+    
+    [Test]
+    public async Task DeleteParkingSpot_IsCalledWithWrongId_ReturnsNotFound()
+    {
+        var response = await client.DeleteAsync("/parkingspot/123456");
+        
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
     
     [Test]
